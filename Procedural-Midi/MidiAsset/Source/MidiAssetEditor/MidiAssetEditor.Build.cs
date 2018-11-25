@@ -16,17 +16,22 @@ public class MidiAssetEditor : ModuleRules
 			new string[] {
 				"AssetTools",
 				"MainFrame",
-			}
+            }
 		);
 
 		PrivateIncludePaths.AddRange(
 			new string[] {
-				"MidiAssetEditor/Private",
-				"MidiAssetEditor/Private/Factories",
-			}
+            }
 		);
 
-		PrivateDependencyModuleNames.AddRange(
+        PublicDependencyModuleNames.AddRange(
+            new string[] {
+                            "Core",
+                            "CoreUObject",
+            }
+        );
+
+        PrivateDependencyModuleNames.AddRange(
 			new string[] {
 				"ContentBrowser",
 				"Core",
@@ -40,14 +45,14 @@ public class MidiAssetEditor : ModuleRules
 				"SlateCore",
                 "MidiAsset",
 				"UnrealEd",
-			}
+            }
 		);
 
 		PrivateIncludePathModuleNames.AddRange(
 			new string[] {
 				"AssetTools",
 				"UnrealEd",
-			}
+            }
 		);
 	}
 }

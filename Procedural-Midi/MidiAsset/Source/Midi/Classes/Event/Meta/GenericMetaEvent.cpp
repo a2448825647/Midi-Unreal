@@ -3,18 +3,21 @@
 
 #include "GenericMetaEvent.h"
 
-GenericMetaEvent::GenericMetaEvent(long tick, long delta, int type, VariableLengthInt * length, char data[])
-	: MetaEvent(tick, delta, type, length), mData(NULL)
+GenericMetaEvent::GenericMetaEvent(long tick, long delta, MetaEventData& info)
+	: MetaEvent(tick, delta, info.type, info.length), mData(NULL)
 {
-	mData = data;
+	mData = info.data;
 
-	cout << "Warning: GenericMetaEvent used because type "  << type << " wasn't recognized or unexpected data length ("<< length->getValue() <<") for the type.";
+	cout << "Warning: GenericMetaEvent used because type "  << info.type << " wasn't recognized or unexpected data length ("<< info.length->getValue() <<") for the type.";
+
+	// make sure to keep data pointers
+	info.destroy = false;
 }
 
 GenericMetaEvent::~GenericMetaEvent()
 {
 	if (mData != NULL)
-		delete[] mData;
+		delete []mData;
 	mData = NULL;
 }
 
@@ -26,14 +29,17 @@ void GenericMetaEvent::writeToFile(ostream & output) {
 	MetaEvent::writeToFile(output);
 
 	output.write(mLength->getBytes(), mLength->getByteCount());
-	output.write(mData, sizeof(&mData));
+	output.write(mData, mLength->getValue());
 }
 
-int GenericMetaEvent::CompareTo(MidiEvent *other) {
+int GenericMetaEvent::compareTo(MidiEvent *other) {
 	// Compare time
-	int value = MidiEvent::CompareTo(other);
-	if (value != 0)
-		return value;
+	if (mTick != other->getTick()) {
+		return mTick < other->getTick() ? -1 : 1;
+	}
+	if (mDelta->getValue() != other->getDelta()) {
+		return mDelta->getValue() < other->getDelta() ? 1 : -1;
+	}
 
 	return 1;
 }

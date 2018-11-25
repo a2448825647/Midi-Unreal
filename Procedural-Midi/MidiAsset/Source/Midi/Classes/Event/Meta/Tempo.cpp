@@ -4,6 +4,7 @@
 #include "Tempo.h"
 
 #include "../../Util/MidiUtil.h"
+#include "GenericMetaEvent.h"
 
 const float Tempo::DEFAULT_BPM = 120.0f;
 const int Tempo::DEFAULT_MPQN = (int)(60000000 / DEFAULT_BPM);
@@ -43,30 +44,33 @@ int Tempo::getEventSize() {
 void Tempo::writeToFile(ostream & output) {
 	MetaEvent::writeToFile(output);
 
-	int size = getEventSize() - 3;
-	output.put((char)size);
+	output.put((char)3); // size
 	output.write(MidiUtil::intToBytes(mMPQN, 3), 3);
 }
 
-Tempo * Tempo::parseTempo(long tick, long delta, istream & input) {
+MetaEvent * Tempo::parseTempo(long tick, long delta, MetaEventData& info) {
+	// Check if valid Event
+	if (info.length->getValue() != 3)
+	{
+		return new GenericMetaEvent(tick, delta, info);
+	}
 
-	input.ignore();		// Size = 3
-
-	char buffer[3] = { 0 };
-	input.read(buffer, 3);
-	int mpqn = MidiUtil::bytesToInt(buffer, 0, 3);
+	int mpqn = MidiUtil::bytesToInt(info.data, 0, 3);
 
 	return new Tempo(tick, delta, mpqn);
 }
 
-int Tempo::CompareTo(MidiEvent *other) {
+int Tempo::compareTo(MidiEvent *other) {
 	// Compare time
-	int value = MidiEvent::CompareTo(other);
-	if (value != 0)
-		return value;
+	if (mTick != other->getTick()) {
+		return mTick < other->getTick() ? -1 : 1;
+	}
+	if (mDelta->getValue() != other->getDelta()) {
+		return mDelta->getValue() < other->getDelta() ? 1 : -1;
+	}
 
-	// events are not the same
-	if (!(other->getType() == this->getType())) {
+	// Check if same event type
+	if (!(other->getType() == MetaEvent::TEMPO)) {
 		return 1;
 	}
 

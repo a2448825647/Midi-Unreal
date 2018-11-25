@@ -34,7 +34,7 @@ protected:
 	int getEventSize();
 
 public:
-	int CompareTo(MidiEvent *other);
+	int compareTo(MidiEvent *other);
 	bool requiresStatusByte(MidiEvent * prevEvent);
 
 	void writeToFile(ostream & output, bool writeType);
@@ -48,4 +48,7 @@ public:
 	static const int PROGRAM_CHANGE = 0xC;
 	static const int CHANNEL_AFTERTOUCH = 0xD;
 	static const int PITCH_BEND = 0xE;
+
+private:
+	static int getOrder(int type);
 };

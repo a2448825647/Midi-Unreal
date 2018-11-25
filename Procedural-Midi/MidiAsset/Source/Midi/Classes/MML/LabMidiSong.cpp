@@ -192,7 +192,7 @@ namespace Lab {
     // sample MML from http://www.g200kg.com/en/docs/webmodular/
     // t150 e-d-<g-4>g-rg-4e-d-<g-4>g-rg-4e-d-<g-4>g-4<e-4>g-4<d-4>frf4e-d-<d-4>frf4e-d-<d-4>frf4e-d-<d-4>f4<e-4>f4<g-4>g-rg-4
     
-	MidiFile* MidiSong::parseMML(char const*const mmlStr, int length, bool verbose)
+	MidiFile* MidiSong::parseMML(char const*const mmlStr, int length)
     {
 		MidiFile* mMidiFile = new MidiFile();
 		int ticksPerBeat = 240;//mMidiFile->getResolution();  // 480
@@ -309,9 +309,6 @@ namespace Lab {
 					// note output { tr, cnt-1, size 3, 0x90|tr note & 0x7f vol=0x00 }
 					track->insertEvent(new NoteOn(ticks, tr, note & 0x7f, volume));
 					track->insertEvent(new NoteOn(ticks + duration, tr, note & 0x7f, volume));
-
-					//track->insertNote(tr, note & 0x7f, volume, ticks, 0);
-					//track->insertNote(tr, note & 0x7f, volume, ticks, duration);
 					tied = false;
 				}
 				ticks += duration;
@@ -382,13 +379,6 @@ namespace Lab {
 		p->count = 0;
 	}
 
-	static void note_stack(CHORD *p, int number)
-	{
-		if ((p->count + 1) < CHORD_MAX_NOTES) {
-			p->freqlist[p->count++] = number;
-		}
-	}
-
 	static void chord_init(CHORD *p, int bpm, int bticks)
 	{
 		p->bpm = bpm;
@@ -426,14 +416,6 @@ namespace Lab {
 		{
 			MML_ARGS_NOTE *args = &(p->args.note);
 			note_sound(&chord, args->ticks, args->number, component);
-
-			//note_stack(&chord, args->number);
-
-			//if (0 < args->ticks) {
-
-			//	note_sound(&chord, args->ticks, component);
-			//	note_clear(&chord);
-			//}
 		}
 		break;
 		case MML_TYPE_REST:
@@ -442,8 +424,14 @@ namespace Lab {
 			rest_sound(&chord, args->ticks, component);
 		}
 		break;
+		case MML_TYPE_LENGTH:
+		case MML_TYPE_VOLUME:
+		case MML_TYPE_OCTAVE:
+		case MML_TYPE_OCTAVE_UP:
+		case MML_TYPE_OCTAVE_DOWN:
+		case MML_TYPE_USER_EVENT:
+		break;
 		}
-
 	}
 
 	// Called when the game starts

@@ -40,8 +40,7 @@ void VariableLengthInt::parseBytes(istream & input) {
 	mValue = 0;
 	int shift = 0;
 
-	int b = 0;
-	b = input.get();
+	int b = input.get();
 	while (mSizeInBytes < 4) {
 		mSizeInBytes++;
 
@@ -98,7 +97,7 @@ void VariableLengthInt::buildBytes() {
 	}
 }
 
-string VariableLengthInt::ToString() {
+string VariableLengthInt::toString() {
 	stringstream ss;
 	ss << MidiUtil::bytesToHex(mBytes) << " (" << mValue << ")";
 	return ss.str();

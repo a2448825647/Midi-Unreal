@@ -3,6 +3,10 @@
 #include "MidiComponent.h"
 #include "MidiPrivatePCH.h"
 
+// Unreal Engine Files
+#include "Engine/Engine.h"
+#include "Misc/FileHelper.h"
+
 #include "MidiUtils.h"
 #include "MidiFile.h"
 #include "Util/MidiUtil.h"
@@ -25,6 +29,8 @@
 #include "MML/LabMidiSong.h"
 #include "Thread/MidiThread.h"
 
+#include <algorithm>    // std::sort
+
 // Sets default values for this component's properties
 UMidiComponent::UMidiComponent() : PlaySpeed(1.0), mWorker(NULL)
 {
@@ -39,11 +45,6 @@ UMidiComponent::UMidiComponent() : PlaySpeed(1.0), mWorker(NULL)
 
 UMidiComponent::~UMidiComponent() {
 	mProcessor.stop();
-
-	// make sure thread is deleted
-	if (mWorker)
-		delete mWorker;
-	mWorker = NULL;
 
 	if (mMidiFile)
 		delete mMidiFile;
@@ -177,23 +178,18 @@ void UMidiComponent::onEvent(MidiEvent* _event, long ms) {
 }
 
 void UMidiComponent::onStart(bool fromBeginning) { 
-	// MultiThread
-	if (InBackground) {
-		mWorker = new FMidiProcessorWorker(&mProcessor, this->isGameTime);
-	}
-
 	OnStart.Broadcast(fromBeginning); 
 }
 void UMidiComponent::onStop(bool finish) { 
-	// MultiThread
+	OnStop.Broadcast(finish);
+
+		// MultiThread
 	if (mWorker) {
 		mWorker->Stop();
 		delete mWorker;
 	}
 	mWorker = NULL;
 	mQueue.Empty();
-	
-	OnStop.Broadcast(finish); 
 }
 
 //-----------------------------------
@@ -202,15 +198,23 @@ void UMidiComponent::start(bool background, bool UseGameTime) {
 	if (!isRunning()) {
 		InBackground = background;
 		this->isGameTime = UseGameTime;
-	}
 
-	if(UseGameTime) {
-		mProcessor.start(GetWorld()->TimeSeconds * 1000.0f);
-		mProcessor.milliFunction = NULL;
-	}
-	else {
-		mProcessor.start(FPlatformTime::Cycles());
-		mProcessor.milliFunction = FPlatformTime::ToMilliseconds;
+
+		if (UseGameTime) {
+			mProcessor.milliFunction = NULL;
+			if (!InBackground)
+				mProcessor.start(GetWorld()->TimeSeconds * 1000.0f);
+		}
+		else {
+			mProcessor.milliFunction = FPlatformTime::ToMilliseconds;
+			if (!InBackground)
+				mProcessor.start(FPlatformTime::Cycles());
+		}
+
+		// MultiThread
+		if (InBackground) {
+			mWorker = new FMidiProcessorWorker(&mProcessor, this->isGameTime);
+		}
 	}
 }
 
@@ -219,6 +223,7 @@ void UMidiComponent::stop() {
 }
 
 void UMidiComponent::reset() {
+	mProcessor.stop();
 	mProcessor.reset();
 }
 
@@ -241,6 +246,15 @@ int UMidiComponent::GetResolution()
 	}
 }
 
+// sort MIDI predicate
+inline static bool _ConstPredicate(const MidiEvent* ip1, const MidiEvent* ip2)
+{
+	int value = ((MidiEvent*)ip1)->compareTo((MidiEvent*)ip2);
+
+	// somehow value should be less then else it flips the MIDI file
+	return value < 0;
+}
+
 float UMidiComponent::GetDuration()
 {
 
@@ -249,54 +263,48 @@ float UMidiComponent::GetDuration()
 	{
 		vector<vector<MidiEvent*>::iterator > mCurrEvents;
 		vector<vector<MidiEvent*>::iterator > mCurrEventsEnd;
+
 		vector<MidiTrack*>& tracks = mMidiFile->getTracks();
 		for (int i = 0; i < (int)tracks.size(); i++) {
 			mCurrEvents.push_back(tracks[i]->getEvents().begin());
 			mCurrEventsEnd.push_back(tracks[i]->getEvents().end());
 		}
 
-		double mMsElapsed = 0;
+		double msElapsed = 0;
 		const int& mPPQ = mMidiFile->getResolution();
 		int mMPQN = Tempo::DEFAULT_MPQN;
-		double mTicksElapsed = 0;
 
-		while (true) {
-
-			const double msElapsed = 1.0;
-			double ticksElapsed = (((msElapsed * 1000.0) * mPPQ) / mMPQN) * mProcessor.PlayRate;
-
-			mMsElapsed += msElapsed;
-			mTicksElapsed += ticksElapsed;
-
-			for (int i = 0; i < (int)mCurrEvents.size(); i++) {
-				while (mCurrEvents[i] != mCurrEventsEnd[i]) {
-					MidiEvent * _event = *mCurrEvents[i];
-					if (_event->getTick() <= mTicksElapsed) {
-						// Tempo and Time Signature events are always needed by the processor
-						if (_event->getType() == MetaEvent::TEMPO) {
-							mMPQN = (static_cast<Tempo*>(_event))->getMpqn();
-						}
-						++mCurrEvents[i];
-					}
-					else
-						break;
+		vector<Tempo*> tempoTicks;
+		for (int i = 0; i < (int)mCurrEvents.size(); i++) {
+			while (mCurrEvents[i] != mCurrEventsEnd[i]) {
+				MidiEvent * _event = *mCurrEvents[i];
+				// Tempo and Time Signature events are always needed by the processor
+				if (_event->getType() == MetaEvent::TEMPO) {
+					tempoTicks.push_back(static_cast<Tempo*>(_event));
 				}
+				++mCurrEvents[i];
 			}
-			
-			bool more = false;
-			for (int i = 0; i < (int)mCurrEvents.size(); i++) {
-				if (mCurrEvents[i] != mCurrEventsEnd[i])
-				{
-					more = true; 
-					break;
-				}
-			}
-
-			if (more == false)
-				break;
 		}
 
-		return  mMsElapsed / 1000.0f;
+		std::sort(tempoTicks.begin(), tempoTicks.end(), _ConstPredicate);
+
+		double ticksElapsed = 0;
+		for (int i = 0; i < (int)tempoTicks.size(); i++) {
+			Tempo * tempo = tempoTicks[i];
+
+			if (i > 0)
+				ticksElapsed = tempoTicks[i - 1]->getTick();
+
+			msElapsed += MidiUtil::ticksToMs(tempo->getTick() - ticksElapsed, mMPQN, mPPQ);
+			mMPQN = tempo->getMpqn();
+		}
+
+		if (tempoTicks.size() > 0)
+			ticksElapsed = tempoTicks[(int)tempoTicks.size() - 1]->getTick();
+
+		msElapsed += MidiUtil::ticksToMs(mMidiFile->getLengthInTicks() - ticksElapsed, mMPQN, mPPQ);
+
+		return  msElapsed / 1000.0;
 	}
 	else
 	{

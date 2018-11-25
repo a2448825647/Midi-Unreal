@@ -15,6 +15,7 @@
 
 #include "Meta/MetaEvent.h"
 #include <sstream>
+#include <vector>
 
 MidiEvent::MidiEvent(long tick, long delta) : mType(-1), mDelta(NULL)  {
 	mTick = tick;
@@ -71,14 +72,14 @@ bool MidiEvent::requiresStatusByte(MidiEvent * prevEvent) {
 		return true;
 	}
 
-	// make sure both events are not the same
+	// check if the events are the same
 	if (this->getType() == prevEvent->getType()) {
 		return false;
 	}
 	return true;
 }
 
-void MidiEvent::writeToFile(ostream & output, bool writeType){
+void MidiEvent::writeToFile(ostream & output, bool writeType) {
 	output.write(mDelta->getBytes(), mDelta->getByteCount());
 }
 
@@ -91,8 +92,7 @@ MidiEvent * MidiEvent::parseEvent(long tick, long delta, istream & input){
 	bool reset = false;
 	
 	// ID event
-	int id = 0;
-	id = input.get();
+	int id = input.get();
 	if (!verifyIdentifier(id)) {
 		// move back one bytes
 		input.unget();
@@ -113,8 +113,10 @@ MidiEvent * MidiEvent::parseEvent(long tick, long delta, istream & input){
 	else if (sId == 0xF0 || sId == 0xF7) {
 
 		VariableLengthInt size(input);
-		char * data = new char[size.getValue()];
-		input.read(data, size.getValue());
+
+		string* data = new string(size.getValue(), ' ');
+		input.read(&(*data)[0], size.getValue());
+
 		return new SystemExclusiveEvent(sId, tick, delta, data);
 	}
 	// Unknown Event
@@ -152,18 +154,6 @@ bool MidiEvent::verifyIdentifier(int id) {
 		return false;
 	}
 	return true;
-}
-
-int MidiEvent::CompareTo(MidiEvent *other)
-{
-	if (mTick != other->getTick()) {
-		return mTick < other->getTick() ? -1 : 1;
-	}
-	if (mDelta->getValue() != other->getDelta()) {
-		return mDelta->getValue() < other->getDelta() ? 1 : -1;
-	}
-
-	return 0;
 }
 
 // Just a way to return the name of the event
@@ -230,7 +220,7 @@ string getMidiClassName(int type) {
 	return "Unknown";
 }
 
-string MidiEvent::ToString()
+string MidiEvent::toString()
 {
 	std::stringstream ss;
 	ss << mTick << " (" << mDelta->getValue() << "): " << getMidiClassName(mType);

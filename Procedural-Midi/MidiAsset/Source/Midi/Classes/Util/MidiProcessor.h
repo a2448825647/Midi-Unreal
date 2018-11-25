@@ -46,13 +46,18 @@ public:
 
 	// Sets the play back rate
 	double PlayRate;
-	/*TODO set time if using user based clock*/
-	void setStartClock(double time) {
-		mLastMs = time;
-	}
 	// TODO temp expose to get current track
 	int _trackID;
 	
+	/* allows custom time parser (Unreal engine workaround)
+	 ex
+	// Funtion
+	float customMilliParser(const unsigned int elapsed) {
+		return elapsed / 1000;
+	}
+	// Inside a Function
+	mProcessor.milliFunction = customMilliParser;
+	*/
 	float (*milliFunction)(const unsigned int);
 
 	void update(const double& deltaTime = clock());
@@ -68,55 +73,64 @@ private:
 	double mLastMs;
 	MidiEventListener* mListener;
 
-	//class MidiTrackEventIterator
-	//{
-	//private:
-	//	MidiTrack* mTrack;
-	//	vector<MidiEvent*>::iterator mIterator;
-	//	vector<MidiEvent*>::iterator mEnd;
-	//	MidiEvent* mEvent;
+	/*class MidiTrackEventIterator
+	{
+	private:
+		MidiTrack* mTrack;
+		vector<MidiEvent*>::iterator mIterator, mEnd;
+		MidiEvent* mEvent;
+		MidiProcessor * mProccessor;
 
-	//public:
-	//	MidiTrackEventIterator(MidiTrack* track) :mEvent(NULL)
-	//	{
-	//		mTrack = track;
+	public:
+		MidiTrackEventIterator(MidiTrack* track, MidiProcessor* p) :mEvent(NULL)
+		{
+			mTrack = track;
+			mProccessor = p;
 
-	//		this->Reset();
-	//	}
+			this->Reset();
+		}
 
-	//	void Next()
-	//	{
-	//		if (mIterator != mEnd)
-	//		{
-	//			mEvent = *mIterator;
-	//			mIterator++;
-	//		}
-	//		else
-	//		{
-	//			mEvent = NULL;
-	//		}
-	//	}
+		void parseNextEventsUpToTick(double tick)
+		{
 
-	//	MidiEvent* getEvent()
-	//	{
-	//		return  mEvent;
-	//	}
+			while (mEvent != NULL)
+			{
 
-	//	bool hasMoreEvents() const
-	//	{
-	//		return mEvent != NULL;
-	//	}
+				if (mEvent->getTick() <= tick)
+				{
+					if (mIterator != mEnd)
+					{
+						mEvent = *mIterator;
+						mProccessor->dispatch(mEvent);
+						mIterator++;
+					}
+					else
+					{
+						mEvent = NULL;
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
 
-	//	void Reset() {
-	//		mEvent = NULL;
+		bool hasMoreEvents() const
+		{
+			return mEvent != NULL;
+		}
 
-	//		mIterator = mTrack->getEvents().begin();
-	//		mEnd = mTrack->getEvents().end();
+		void Reset() {
+			mEvent = NULL;
 
-	//		if (mIterator != mEnd)
-	//		{
-	//			mEvent = *mIterator;
-	//		}
-	//	}
-	//};
+			mIterator = mTrack->getEvents().begin();
+			mEnd = mTrack->getEvents().end();
+
+			if (mIterator != mEnd)
+			{
+				mEvent = *mIterator;
+			}
+		}
+	};*/
 };

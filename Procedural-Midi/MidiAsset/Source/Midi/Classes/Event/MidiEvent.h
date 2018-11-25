@@ -50,15 +50,15 @@ public:
 	static MidiEvent * parseEvent(long tick, long delta, istream & input);
 
 	/* Compare MIDI events
-	*  0:	Current event time is the same as Other
-	*  -1:	Current event time is less then Other
-	*  1:	Current event time is greater then other
+	*  0:	Current event is the same as Other
+	*  -1:	Current event is less then Other
+	*  1:	Current event is greater then other
 	*/
-	virtual int CompareTo(MidiEvent *other);
+	virtual int compareTo(MidiEvent *other) = 0;
 
 private:
 	static bool verifyIdentifier(int id);
 
 public:
-	virtual string ToString();
+	virtual string toString();
 };

@@ -6,6 +6,7 @@
 #include "../MidiEvent.h"
 
 #include <sstream>
+#include <vector>
 using namespace std;
 
 /**
@@ -22,7 +23,7 @@ protected:
 
 	virtual int getEventSize() = 0;
 public:
-	virtual void writeToFile(ostream & output, bool writeType);
+	/*virtual*/void writeToFile(ostream & output, bool writeType);
 
 protected:
 	virtual void writeToFile(ostream & output);
@@ -38,14 +39,29 @@ protected:
 		VariableLengthInt* length;
 		char* data;
 
-		MetaEventData(istream& input) : type(0), length(NULL), data(NULL)
+		// a way to manage handle memory
+		bool destroy;
+
+		MetaEventData(istream& input) : type(0), length(NULL), data(NULL), destroy(true)
 		{
 			type = input.get();
 			length = new VariableLengthInt(input);
 			data = new char[length->getValue()];
+
 			if (length->getValue() > 0)
 			{
 				input.read(data, length->getValue());
+			}
+		}
+
+		~MetaEventData()
+		{
+			if (destroy) {
+				delete length;
+				delete data;
+
+				length = NULL;
+				data = NULL;
 			}
 		}
 	};

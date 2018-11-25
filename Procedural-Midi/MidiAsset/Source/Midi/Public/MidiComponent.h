@@ -9,6 +9,7 @@
 
 #include "MidiUtils.h"
 
+#include "Containers/Queue.h"
 #include "Components/ActorComponent.h"
 #include "MidiComponent.generated.h"
 
@@ -17,7 +18,7 @@ class FMidiProcessorWorker;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventStart, bool, beginning);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventStop, bool, finished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEventMidiEvent, struct FMidiEvent, Event, int32, time, int, TrackID);
-//DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSysExEventReceive, const TArray<uint8>&, data, int32, time, int, TrackID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSysExEventReceive, const TArray<uint8>&, data, int32, time, int, TrackID);
 
 /*
 * A component that loads/plays a MIDI Asset or file
@@ -115,7 +116,6 @@ public:
 	int GetResolution();
 	
 	/* Returns MIDI file duration in seconds
-	* Performance issue
 	*/
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MIDI|Processor")
 	float GetDuration();
@@ -134,7 +134,7 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FEventMidiEvent OnMidiEvent;
 
-	//UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
+	//UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor", meta = (DisplayName = "On System Exclusive Event"))
 	//FSysExEventReceive OnSysExEvent;
 
 	//UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
@@ -155,8 +155,10 @@ private:
 		FMidiEvent Event;
 		long ms;
 		int trackID;
+
+	//	string* data;
 	};
 
 		// Handle Data Racing 
-	TQueue<MidiCallbackMessage> mQueue;
+	TQueue<MidiCallbackMessage, EQueueMode::Mpsc> mQueue;
 };

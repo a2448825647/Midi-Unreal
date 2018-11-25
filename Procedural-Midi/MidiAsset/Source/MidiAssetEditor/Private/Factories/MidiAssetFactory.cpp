@@ -3,6 +3,7 @@
 #include "MidiAssetFactory.h"
 #include "MidiAssetEditorPrivatePCH.h"
 
+#include "Misc/FileHelper.h"
 
 /* UMidiAssetFactory structors
  *****************************************************************************/
@@ -27,7 +28,6 @@ UObject* UMidiAssetFactory::FactoryCreateBinary(UClass* Class, UObject* InParent
 
 	if (FFileHelper::LoadFileToArray(data, *CurrentFilename))
 	{
-
 		MidiAsset = NewObject<UMidiAsset>(InParent, Class, Name, Flags);
 		MidiAsset->Data = data;
 	}

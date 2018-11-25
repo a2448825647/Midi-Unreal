@@ -11,19 +11,19 @@
  */
 class SequencerSpecificEvent : public MetaEvent
 {
-	char * mData;
+	string * mData;
 
 public:
-	SequencerSpecificEvent(long tick, long delta, char data[]);
+	SequencerSpecificEvent(long tick, long delta, string* data);
 	~SequencerSpecificEvent();
 
-	void setData(char data[]);
-	char * getData();
+	void setData(string* data);
+	string * getData();
 
 protected:
 	int getEventSize();
 
 public:
 	void writeToFile(ostream & output);
-	int CompareTo(MidiEvent *other);
+	int compareTo(MidiEvent *other);
 };
