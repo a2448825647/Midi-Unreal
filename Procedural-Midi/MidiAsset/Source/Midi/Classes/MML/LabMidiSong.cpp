@@ -388,7 +388,7 @@ namespace Lab {
 	static void note_sound(CHORD *p, int ticks, int number, MidiSong* component)
 	{
 		uint32_t ms = get_note_length_ms(p, ticks);
-		uint32_t duration = (uint32_t)MidiUtil::msToTicks((long)ms, (float)p->bpm, 480);
+		uint32_t duration = (uint32_t)MidiUtil::msToTicks((long)ms, (float)p->bpm, p->bticks);
 		component->track->insertNote(component->trackNumber, number & 0x7f, 127, component->ticks, duration);
 		component->ticks += duration;
 	}
@@ -396,7 +396,7 @@ namespace Lab {
 	static void rest_sound(CHORD *p, int ticks, MidiSong* component)
 	{
 		uint32_t ms = get_note_length_ms(p, ticks);
-		uint32_t duration = (uint32_t)MidiUtil::msToTicks((long)ms, (float)p->bpm, 480);
+		uint32_t duration = (uint32_t)MidiUtil::msToTicks((long)ms, (float)p->bpm, p->bticks);
 		component->ticks += duration;
 	}
 
@@ -459,6 +459,7 @@ namespace Lab {
 		MML_RESULT cher;
 		while ( (cher = mml_fetch(&mml)) == MML_RESULT_OK) {
 		}
+		track->closeTrack();
 		note_clear(&chord);
 	}
     

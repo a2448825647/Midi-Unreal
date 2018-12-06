@@ -7,7 +7,7 @@
 #include "Util/MetronomeTick.h"
 #include "Util/MidiProcessor.h"
 
-#include "MidiUtils.h"
+#include "MidiStruct.h"
 
 #include "Containers/Queue.h"
 #include "Components/ActorComponent.h"
@@ -18,7 +18,7 @@ class FMidiProcessorWorker;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventStart, bool, beginning);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventStop, bool, finished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEventMidiEvent, struct FMidiEvent, Event, int32, time, int, TrackID);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSysExEventReceive, const TArray<uint8>&, data, int32, time, int, TrackID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FTextEventReceive, EMidiTextTypeEnum, type, const FString&, text, int32, time, int, TrackID);
 
 /*
 * A component that loads/plays a MIDI Asset or file
@@ -134,11 +134,14 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FEventMidiEvent OnMidiEvent;
 
-	//UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor", meta = (DisplayName = "On System Exclusive Event"))
-	//FSysExEventReceive OnSysExEvent;
-
-	//UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
-	//	FSysExEventReceive OnMetaEvent;
+	/* Called when a Text Event is received
+	* @param Type - The type of text event (e.g. Cue, Marker)
+	* @param Text - 
+	* @param MS - time of event occured in milliseconds
+	* @param Track ID - Which track the event happened
+	*/
+	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor", meta = (DisplayName = "On Text Event"))
+	FTextEventReceive OnTextEvent;
 
 private:
 
@@ -152,13 +155,13 @@ private:
 	class MidiCallbackMessage
 	{
 	public:
-		FMidiEvent Event;
+		MidiEvent* Event;
 		long ms;
 		int trackID;
-
-	//	string* data;
 	};
 
 		// Handle Data Racing 
-	TQueue<MidiCallbackMessage, EQueueMode::Mpsc> mQueue;
+	TQueue<MidiCallbackMessage, EQueueMode::Spsc> mQueue;
+	void handleCallback(MidiEvent* _event, long ms, int trackID);
+	TArray<int> dataCache;
 };

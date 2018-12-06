@@ -62,7 +62,7 @@ MidiTrack::~MidiTrack()
 // sort MIDI predicate
 inline static bool ConstPredicate(const MidiEvent* ip1, const MidiEvent* ip2)
 {
-	int value = ((MidiEvent*)&ip1)->compareTo((MidiEvent*)ip2);
+	int value = ((MidiEvent*)ip1)->compareTo((MidiEvent*)ip2);
 
 	// somehow value should be less then else it flips the MIDI file
 	return value < 0;

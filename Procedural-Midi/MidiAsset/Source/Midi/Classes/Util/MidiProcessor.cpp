@@ -62,10 +62,10 @@ void MidiProcessor::start(const double& deltaTime /*= clock()*/) {
 }
 
 void MidiProcessor::stop() {
-	bool running = mRunning;
+	if (!mRunning) return;
+
 	mRunning = false;
-	if(running)
-		mListener->onStop(false);
+	mListener->onStop(false);
 }
 
 void MidiProcessor::reset() {

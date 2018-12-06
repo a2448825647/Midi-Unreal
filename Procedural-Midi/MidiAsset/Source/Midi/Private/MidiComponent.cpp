@@ -7,7 +7,7 @@
 #include "Engine/Engine.h"
 #include "Misc/FileHelper.h"
 
-#include "MidiUtils.h"
+#include "MidiStruct.h"
 #include "MidiFile.h"
 #include "Util/MidiUtil.h"
 
@@ -21,6 +21,17 @@
 #include "Event/ProgramChange.h"
 #include "Event/SystemExclusiveEvent.h"
 #include "Event/Meta/Tempo.h"
+
+#include "Event/Meta/TextualMetaEvent.h"
+#include "Event/Meta/SequencerSpecificEvent.h"
+#include "Event/Meta/TimeSignature.h"
+#include "Event/Meta/EndOfTrack.h"
+#include "Event/Meta/GenericMetaEvent.h"
+#include "Event/Meta/KeySignature.h"
+#include "Event/Meta/MidiChannelPrefix.h"
+#include "Event/Meta/SequenceNumber.h"
+#include "Event/Meta/SequencerSpecificEvent.h"
+#include "Event/Meta/SmpteOffset.h"
 
 #include "MidiAsset.h"
 
@@ -80,7 +91,7 @@ void UMidiComponent::TickComponent( float DeltaTime, ELevelTick TickType, FActor
 		while (!mQueue.IsEmpty()) {
 			MidiCallbackMessage _midiEvent;
 			mQueue.Dequeue(_midiEvent);
-			OnMidiEvent.Broadcast(_midiEvent.Event, _midiEvent.ms, _midiEvent.trackID);
+			handleCallback(_midiEvent.Event, _midiEvent.ms, _midiEvent.trackID);
 		}
 }
 
@@ -151,6 +162,16 @@ void UMidiComponent::LoadMML(FString path) {
 }
 
 void UMidiComponent::onEvent(MidiEvent* _event, long ms) {
+	if (InBackground) {
+		MidiCallbackMessage msg = { _event, ms, mProcessor._trackID };
+		mQueue.Enqueue(msg);
+	}
+	else
+		handleCallback(_event, ms, mProcessor._trackID);
+}
+
+void UMidiComponent::handleCallback(MidiEvent* _event, long ms, int trackID)
+{
 	// Channel Event
 	if (_event->getType() >= ChannelEvent::NOTE_OFF && _event->getType() <= ChannelEvent::PITCH_BEND) {
 		ChannelEvent* channelEvent = static_cast<ChannelEvent*>(_event);
@@ -160,7 +181,7 @@ void UMidiComponent::onEvent(MidiEvent* _event, long ms) {
 		_midiEvent.Channel = channelEvent->getChannel() & 0x0F;
 		_midiEvent.Data1 = channelEvent->getValue1() & 0xFF;
 		_midiEvent.Data2 = channelEvent->getValue2() & 0xFF;
-		
+
 		if (SimplifyNote) {
 			// Running Status Event [Improved Midi Performance]
 			if (_event->getType() == ChannelEvent::NOTE_OFF) {
@@ -168,12 +189,18 @@ void UMidiComponent::onEvent(MidiEvent* _event, long ms) {
 				_midiEvent.Data2 = 0 & 0XFF;
 			}
 		}
-		if (InBackground) {
-			MidiCallbackMessage msg = { _midiEvent, ms, mProcessor._trackID };
-			mQueue.Enqueue(msg);
+		OnMidiEvent.Broadcast(_midiEvent, ms, trackID);
+	}
+	else 
+	{
+		// Textual Meta Event
+		if (_event->getType() >= MetaEvent::TEXT_EVENT && _event->getType() <= MetaEvent::CUE_POINT) {
+			if (!OnTextEvent.IsBound())
+				return;
+			TextualMetaEvent* textExEvent = static_cast<TextualMetaEvent*>(_event);
+			FString text = UTF8_TO_TCHAR(textExEvent->getText().c_str());
+			OnTextEvent.Broadcast(static_cast<EMidiTextTypeEnum>(textExEvent->getType()), text, ms, trackID);
 		}
-		else
-			OnMidiEvent.Broadcast(_midiEvent, ms, mProcessor._trackID);
 	}
 }
 
@@ -181,8 +208,6 @@ void UMidiComponent::onStart(bool fromBeginning) {
 	OnStart.Broadcast(fromBeginning); 
 }
 void UMidiComponent::onStop(bool finish) { 
-	OnStop.Broadcast(finish);
-
 		// MultiThread
 	if (mWorker) {
 		mWorker->Stop();
@@ -190,6 +215,8 @@ void UMidiComponent::onStop(bool finish) {
 	}
 	mWorker = NULL;
 	mQueue.Empty();
+	
+	OnStop.Broadcast(finish);
 }
 
 //-----------------------------------
@@ -258,7 +285,6 @@ inline static bool _ConstPredicate(const MidiEvent* ip1, const MidiEvent* ip2)
 float UMidiComponent::GetDuration()
 {
 
-	// TODO find a better solution
 	if (mMidiFile)
 	{
 		vector<vector<MidiEvent*>::iterator > mCurrEvents;
@@ -285,7 +311,6 @@ float UMidiComponent::GetDuration()
 				++mCurrEvents[i];
 			}
 		}
-
 		std::sort(tempoTicks.begin(), tempoTicks.end(), _ConstPredicate);
 
 		double ticksElapsed = 0;

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "RtMidi.h"
-#include "MidiUtils.h"
+#include "MidiStruct.h"
 
 #include "Kismet/BlueprintFunctionLibrary.h"
 #include "MidiInterfaceLibrary.generated.h"

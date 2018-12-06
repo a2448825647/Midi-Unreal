@@ -49,7 +49,6 @@ int TimeSignature::getEventSize() {
 void TimeSignature::writeToFile(ostream & output) {
 	MetaEvent::writeToFile(output);
 
-	int size = getEventSize() - 3; // 4
 	output.put((char)4); // size
 	output.put((char)mNumerator);
 	output.put((char)mDenominator);
