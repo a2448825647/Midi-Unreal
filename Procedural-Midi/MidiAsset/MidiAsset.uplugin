@@ -35,6 +35,11 @@
 		{
 			"Name" : "MidiInterface",
 			"Type" : "Runtime",
+			"BlacklistPlatforms" :
+			[
+				"IOS",
+				"MAC",
+			],
 			"LoadingPhase" : "Default"
 		},
 		{
