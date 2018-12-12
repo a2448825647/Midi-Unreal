@@ -126,40 +126,19 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FEventStop OnStop;
 
-	/**
-	* Called when a MIDI 'Voice' Event is received
-	* @param Event - (e.g. Control, Note, Pitch Bend)
-	* @param Time - time of event occured in milliseconds
-	* @param TrackID - Which track the event happened
-	*/
+	/* Called when a Midi Event is received */
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FEventMidiEvent OnMidiEvent;
 
-	/**
-	* Called when a System Exclusive is received
-	* @param Data - F0 <sysex_dat> F7 OR F7+{byte, byte}
-	* @param Time - time of event occured in milliseconds
-	* @param TrackID - Which track the event happened
-	*/
-	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor", meta = (DisplayName = "On System Exclusive Event"))
+	// Called when a System Exclusive is received
+	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FSysExEventReceive OnSysExEvent;
 
-	/**
-	* Called when a Meta Text Event is received
-	* @param Type - The type of text event (e.g. Cue, Marker)
-	* @param Text -
-	* @param Time - time of event occured in milliseconds
-	* @param TrackID - Which track the event happened
-	*/
+	// Called when a Text Event is received (e.g. Cue, Marker)
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FTextEventReceive OnTextEvent;
 
-	/**
-	* Metronome
-	* @param Beat Number - 
-	* @param Measure -
-	* @param Time - time of event occured in milliseconds
-	*/
+	// Metronome Ticker
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FEventMetronome OnMetronomeTick;
 

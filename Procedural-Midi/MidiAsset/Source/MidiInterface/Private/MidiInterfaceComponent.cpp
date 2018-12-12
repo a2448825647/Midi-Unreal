@@ -26,10 +26,6 @@ UMidiInterfaceComponent::UMidiInterfaceComponent()
 	PrimaryComponentTick.bCanEverTick = queueCallbacks;
 	inSysEx = false;
 }
-UMidiInterfaceComponent::~UMidiInterfaceComponent() {
-	midiIn.closePort();
-	midiOut.closePort();
-}
 
 // Called when the game starts or when spawned
 void UMidiInterfaceComponent::BeginPlay()
