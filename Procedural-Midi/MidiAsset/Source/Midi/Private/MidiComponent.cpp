@@ -226,7 +226,8 @@ void UMidiComponent::handleCallback(MidiEvent* _event, long ms, int trackID)
 		// add 0xF7 SysEx End on Divided
 		if (isDivided) {
 			// close message
-			data.Add((uint8)0xF7);
+			if(data[data.Num() - 1] != 0xF7)
+				data.Add((uint8)0xF7);
 		}
 
 		OnSysExEvent.Broadcast(data, ms, trackID);
