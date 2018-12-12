@@ -35,6 +35,7 @@
 
 #include "MidiAsset.h"
 
+#include "Util/MetronomeTick.h"
 #include "Util/MidiProcessor.h"
 
 #include "MML/LabMidiSong.h"
@@ -152,12 +153,14 @@ void UMidiComponent::LoadFile(FString path) {
 void UMidiComponent::LoadMML(FString path) {
 	if (!canInit()) return;
 	std::string MyStdString(TCHAR_TO_UTF8(*path));
-
-	Lab::MidiSong song;
-	song.trackNumber = 0;
-	song.LoadString(MyStdString);
+	
 	mMidiFile = new MidiFile();
+	// Load MML
+	Lab::MidiSong song;
+	song.channel = 0;
+	song.LoadString(MyStdString);
 	mMidiFile->addTrack(song.track);
+
 	mProcessor.load(*mMidiFile);
 }
 
@@ -172,35 +175,79 @@ void UMidiComponent::onEvent(MidiEvent* _event, long ms) {
 
 void UMidiComponent::handleCallback(MidiEvent* _event, long ms, int trackID)
 {
+	int midi_type = _event->getType();
+
 	// Channel Event
-	if (_event->getType() >= ChannelEvent::NOTE_OFF && _event->getType() <= ChannelEvent::PITCH_BEND) {
+	if (midi_type >= ChannelEvent::NOTE_OFF &&
+		midi_type <= ChannelEvent::PITCH_BEND) 
+	{
 		ChannelEvent* channelEvent = static_cast<ChannelEvent*>(_event);
 		FMidiEvent _midiEvent;
 
-		_midiEvent.Type = static_cast<EMidiTypeEnum>(_event->getType() & 0X0F);
-		_midiEvent.Channel = channelEvent->getChannel() & 0x0F;
-		_midiEvent.Data1 = channelEvent->getValue1() & 0xFF;
-		_midiEvent.Data2 = channelEvent->getValue2() & 0xFF;
+		_midiEvent.Type = static_cast<EMidiTypeEnum>(midi_type);
+		_midiEvent.Channel = channelEvent->getChannel();
+		_midiEvent.Data1 = channelEvent->getValue1();
+		_midiEvent.Data2 = channelEvent->getValue2();
 
 		if (SimplifyNote) {
 			// Running Status Event [Improved Midi Performance]
-			if (_event->getType() == ChannelEvent::NOTE_OFF) {
-				_midiEvent.Type = static_cast<EMidiTypeEnum>(ChannelEvent::NOTE_ON & 0X0F);
-				_midiEvent.Data2 = 0 & 0XFF;
+			if (midi_type == ChannelEvent::NOTE_OFF) {
+				_midiEvent.Type = static_cast<EMidiTypeEnum>(ChannelEvent::NOTE_ON);
+				_midiEvent.Data2 = 0;
 			}
 		}
 		OnMidiEvent.Broadcast(_midiEvent, ms, trackID);
 	}
-	else 
+	// System Exclusive
+	else if (midi_type == 0xF0 || midi_type == 0xF7)
 	{
-		// Textual Meta Event
-		if (_event->getType() >= MetaEvent::TEXT_EVENT && _event->getType() <= MetaEvent::CUE_POINT) {
-			if (!OnTextEvent.IsBound())
-				return;
-			TextualMetaEvent* textExEvent = static_cast<TextualMetaEvent*>(_event);
-			FString text = UTF8_TO_TCHAR(textExEvent->getText().c_str());
-			OnTextEvent.Broadcast(static_cast<EMidiTextTypeEnum>(textExEvent->getType()), text, ms, trackID);
+		if (!OnSysExEvent.IsBound())
+			return;
+
+		SystemExclusiveEvent* sysExEvent = static_cast<SystemExclusiveEvent*>(_event);
+		TArray<uint8> data;
+		string * ptr = sysExEvent->getData();
+
+		// multi-packet event
+		bool isDivided = false;
+
+		// Add 0xF0 SysEX Start
+		if(midi_type == 0xF0)
+			data.Add(midi_type);
+		// multi-packet check
+		else if (midi_type == 0xF7 && data.Num() > 3) {
+			data.Add(midi_type);
+			isDivided = true;
 		}
+
+		// Add <sysex_dat>
+		data.Append((uint8*)ptr->c_str(), ptr->size());
+
+		// add 0xF7 SysEx End on Divided
+		if (isDivided) {
+			// close message
+			data.Add((uint8)0xF7);
+		}
+
+		OnSysExEvent.Broadcast(data, ms, trackID);
+	}
+	// Textual Meta Event
+	else if (midi_type >= MetaEvent::TEXT_EVENT && 
+			 midi_type <= MetaEvent::CUE_POINT) 
+	{
+		if (!OnTextEvent.IsBound())
+			return;
+		TextualMetaEvent* textExEvent = static_cast<TextualMetaEvent*>(_event);
+		FString text = UTF8_TO_TCHAR(textExEvent->getText().c_str());
+		OnTextEvent.Broadcast(static_cast<EMidiTextTypeEnum>(midi_type), text, ms, trackID);
+	}
+	// Metronome
+	else if (midi_type == MetronomeTick::TYPE) 
+	{
+		if (!OnMetronomeTick.IsBound())
+			return;
+		MetronomeTick* ev = static_cast<MetronomeTick*>(_event);
+		OnMetronomeTick.Broadcast(ev->getBeatNumber(), ev->getMeasure(), ms);
 	}
 }
 
@@ -287,8 +334,8 @@ float UMidiComponent::GetDuration()
 
 	if (mMidiFile)
 	{
-		vector<vector<MidiEvent*>::iterator > mCurrEvents;
-		vector<vector<MidiEvent*>::iterator > mCurrEventsEnd;
+		vector<std::vector<MidiEvent*>::iterator > mCurrEvents;
+		vector<std::vector<MidiEvent*>::iterator > mCurrEventsEnd;
 
 		vector<MidiTrack*>& tracks = mMidiFile->getTracks();
 		for (int i = 0; i < (int)tracks.size(); i++) {

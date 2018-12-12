@@ -3,8 +3,6 @@
 #pragma once
 
 #include "MidiFile.h"
-#include "Event/MidiEvent.h"
-#include "Util/MetronomeTick.h"
 #include "Util/MidiProcessor.h"
 
 #include "MidiStruct.h"
@@ -19,6 +17,9 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventStart, bool, beginning);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FEventStop, bool, finished);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEventMidiEvent, struct FMidiEvent, Event, int32, time, int, TrackID);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FTextEventReceive, EMidiTextTypeEnum, type, const FString&, text, int32, time, int, TrackID);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FSysExEventReceive, const TArray<uint8>&, data, int32, time, int, TrackID);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FEventMetronome, int, beatNumber, int, measure, int32, time);
 
 /*
 * A component that loads/plays a MIDI Asset or file
@@ -50,7 +51,7 @@ public:
 	bool SimplifyNote = false;
 
 	/**
-	* loads a Midi Asset Data
+	* loads a MIDI Asset Data
 	* @param MidiAsset - The UMidiAsset Object
 	*/
 	UFUNCTION(BlueprintCallable, Category = "MIDI|Processor")
@@ -64,7 +65,7 @@ public:
 	void LoadFile(FString path);
 
 	/**
-	* Load a MML Script/String - Experimental
+	* Load a MML Script/String
 	* google tinymml
 	* @param sheet - The MML script in string format 
 	*/
@@ -115,8 +116,7 @@ public:
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MIDI|Processor")
 	int GetResolution();
 	
-	/* Returns MIDI file duration in seconds
-	*/
+	/* Returns MIDI file duration in seconds */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "MIDI|Processor")
 	float GetDuration();
 
@@ -126,22 +126,42 @@ protected:
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FEventStop OnStop;
 
-	/* Called when a Midi Event is received 
-	* @param MidiEvent - The Event
-	* @param MS - time of event occured in milliseconds
-	* @param Track ID - Which track the event happened
+	/**
+	* Called when a MIDI 'Voice' Event is received
+	* @param Event - (e.g. Control, Note, Pitch Bend)
+	* @param Time - time of event occured in milliseconds
+	* @param TrackID - Which track the event happened
 	*/
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FEventMidiEvent OnMidiEvent;
 
-	/* Called when a Text Event is received
-	* @param Type - The type of text event (e.g. Cue, Marker)
-	* @param Text - 
-	* @param MS - time of event occured in milliseconds
-	* @param Track ID - Which track the event happened
+	/**
+	* Called when a System Exclusive is received
+	* @param Data - F0 <sysex_dat> F7 OR F7+{byte, byte}
+	* @param Time - time of event occured in milliseconds
+	* @param TrackID - Which track the event happened
 	*/
-	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor", meta = (DisplayName = "On Text Event"))
+	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor", meta = (DisplayName = "On System Exclusive Event"))
+	FSysExEventReceive OnSysExEvent;
+
+	/**
+	* Called when a Meta Text Event is received
+	* @param Type - The type of text event (e.g. Cue, Marker)
+	* @param Text -
+	* @param Time - time of event occured in milliseconds
+	* @param TrackID - Which track the event happened
+	*/
+	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
 	FTextEventReceive OnTextEvent;
+
+	/**
+	* Metronome
+	* @param Beat Number - 
+	* @param Measure -
+	* @param Time - time of event occured in milliseconds
+	*/
+	UPROPERTY(BlueprintAssignable, Category = "MIDI|Processor")
+	FEventMetronome OnMetronomeTick;
 
 private:
 
@@ -160,8 +180,7 @@ private:
 		int trackID;
 	};
 
-		// Handle Data Racing 
+	// Handle Data Racing 
 	TQueue<MidiCallbackMessage, EQueueMode::Spsc> mQueue;
 	void handleCallback(MidiEvent* _event, long ms, int trackID);
-	TArray<int> dataCache;
 };

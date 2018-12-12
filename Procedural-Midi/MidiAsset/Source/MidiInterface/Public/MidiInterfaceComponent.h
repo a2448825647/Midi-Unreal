@@ -41,6 +41,7 @@ public:
 
 	// Sets default values for this actor's properties
 	UMidiInterfaceComponent();
+	~UMidiInterfaceComponent();
 
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -70,16 +71,16 @@ public:
 	void SendRaw(const TArray<uint8>& Data);
 
 
-	//  Called when a device sends a Midi Event to the computer
+	//  Called when a device sends a MIDI Event to the computer
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Interface")
 	FEventReceive OnReceiveEvent;
 
-	//  Called when a device sends a Midi SysEx Event to the computer
+	//  Called when a device sends a MIDI SysEx Event to the computer
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Interface")
 	FSysExEventReceive OnReceiveSysExEvent;
 
 
-	//  Called when a device sends a Midi clock Event to the computer
+	//  Called when a device sends a MIDI clock Event to the computer
 	UPROPERTY(BlueprintAssignable, Category = "MIDI|Interface")
 	FClockEventReceive OnReceiveClockEvent;
 

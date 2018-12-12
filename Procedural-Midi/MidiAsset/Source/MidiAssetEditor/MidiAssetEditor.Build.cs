@@ -26,25 +26,25 @@ public class MidiAssetEditor : ModuleRules
 
         PublicDependencyModuleNames.AddRange(
             new string[] {
-                            "Core",
-                            "CoreUObject",
+                "Core",
+                "CoreUObject",
             }
         );
 
         PrivateDependencyModuleNames.AddRange(
 			new string[] {
-				"ContentBrowser",
-				"Core",
-				"CoreUObject",
+                "ContentBrowser",
+                "Core",
+                "CoreUObject",
                 "DesktopWidgets",
-				"EditorStyle",
-				"Engine",
-				"InputCore",
+                "EditorStyle",
+                "Engine",
+                "InputCore",
                 "Projects",
-				"Slate",
-				"SlateCore",
+                "Slate",
+                "SlateCore",
                 "MidiAsset",
-				"UnrealEd",
+                "UnrealEd",
             }
 		);
 

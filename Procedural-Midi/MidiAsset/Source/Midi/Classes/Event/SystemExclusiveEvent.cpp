@@ -57,10 +57,7 @@ bool SystemExclusiveEvent::requiresStatusByte(MidiEvent* prevEvent) {
 void SystemExclusiveEvent::writeToFile(ostream & output, bool writeType) {
 	MidiEvent::writeToFile(output, writeType);
 
-	// TODO
-	if (writeType) {
-		output.put((char)mType);
-	}
+	output.put((char)mType);
 	output.write(mLength->getBytes(), mLength->getByteCount());
 	output.write(mData->data(), mLength->getValue());
 }

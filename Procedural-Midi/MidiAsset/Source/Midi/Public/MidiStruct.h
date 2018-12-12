@@ -75,7 +75,7 @@ enum class EMidiTextTypeEnum : uint8
 	*/
 	MMTE_COPYRIGHT_NOTICE 					UMETA(DisplayName = "Copyright Notice"),
 	/*
-	*	Track Name
+	*	Sequence / Track Name
 	*/
 	MMTE_TRACK_NAME  						UMETA(DisplayName = "Track Name"),
 	/*
@@ -99,11 +99,6 @@ enum class EMidiTextTypeEnum : uint8
 UENUM(BlueprintType)
 enum class EMidiMetaTypeEnum : uint8
 {
-	/*
-	*	Unknown Event
-	*	[Data=]
-	*/
-	MMTE_GENERIC = 255 							UMETA(DisplayName = "Generic Event"),
 	/*
 	*	Sequence Number
 	*	[Data1=Number]
@@ -139,11 +134,6 @@ enum class EMidiMetaTypeEnum : uint8
 	*	[Data1=]
 	*/
 	KEY_SIGNATURE 								UMETA(DisplayName = "Key Signature"),
-	/*
-	*	Sequencer Specific
-	*	[Data1=]
-	*/
-	//	SEQUENCER_SPECIFIC = 127 					UMETA(DisplayName = "Sequencer Specific")
 };
 
 UENUM(BlueprintType)
@@ -173,7 +163,7 @@ enum class EMidiClockTypeEnum : uint8
 	*	Clock
 	*	[Data=]
 	*/
-	MCTE_CLOCK = 10						UMETA(DisplayName = "Timing Clock"),
+	MCTE_CLOCK = 10							UMETA(DisplayName = "Timing Clock"),
 	/*
 	*	Start
 	*	[Data=]
@@ -205,21 +195,21 @@ struct FMidiEvent
 {
 	GENERATED_BODY()
 
-		/* The Type of Event this struct represents */
-		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MIDI|Event")
-		EMidiTypeEnum Type;
+	/* The Type of Event this struct represents */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MIDI|Event")
+	EMidiTypeEnum Type;
 
 	/* The Channel that the Event is on (0-15) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MIDI|Event")
-		uint8 Channel;
+	uint8 Channel;
 
 	/* The first data value (ex. Note) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MIDI|Event")
-		uint8 Data1;
+	uint8 Data1;
 
 	/* The second data value (ex, Velocity) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MIDI|Event")
-		uint8 Data2;
+	uint8 Data2;
 
 	/* Constructor */
 	FMidiEvent()
@@ -236,13 +226,13 @@ struct FMidiClockEvent
 {
 	GENERATED_BODY()
 
-		/* The Type of Event this struct represents */
-		UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MIDI|Event")
-		EMidiClockTypeEnum Type;
+	/* The Type of Event this struct represents */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MIDI|Event")
+	EMidiClockTypeEnum Type;
 
 	/* The first data value */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "MIDI|Event")
-		int32 Data;
+	int32 Data;
 
 	/* Constructor */
 	FMidiClockEvent()

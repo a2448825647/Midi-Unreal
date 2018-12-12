@@ -18,7 +18,7 @@ public:
 	~SequencerSpecificEvent();
 
 	void setData(string* data);
-	string * getData();
+	string* getData();
 
 protected:
 	int getEventSize();

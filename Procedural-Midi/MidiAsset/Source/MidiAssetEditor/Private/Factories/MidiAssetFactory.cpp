@@ -11,7 +11,7 @@
 UMidiAssetFactory::UMidiAssetFactory( const FObjectInitializer& ObjectInitializer )
 	: Super(ObjectInitializer)
 {
-	Formats.Add(FString(TEXT("mid;")) + NSLOCTEXT("UMidiAssetFactory", "FormatTxt", "Midi File").ToString());
+	Formats.Add(FString(TEXT("mid;")) + NSLOCTEXT("UMidiAssetFactory", "ParseMIDI", "MIDI File").ToString());
 	SupportedClass = UMidiAsset::StaticClass();
 	bCreateNew = false;
 	bEditorImport = true;

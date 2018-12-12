@@ -5,7 +5,6 @@
 
 #include <iostream>
 #include "../Util/VariableLengthInt.h"
-#include <memory>
 
 /**
  * abstract base class for midi events
@@ -58,6 +57,8 @@ public:
 
 private:
 	static bool verifyIdentifier(int id);
+
+	string getMidiClassName(int type);
 
 public:
 	virtual string toString();

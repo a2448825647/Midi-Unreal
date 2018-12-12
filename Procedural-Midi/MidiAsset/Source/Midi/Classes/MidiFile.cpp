@@ -139,6 +139,9 @@ void MidiFile::removeTrack(int pos)
 	{
 		return;
 	}
+	delete mTracks[pos];
+	mTracks[pos] = NULL;
+
 	mTracks.erase(mTracks.begin() + pos);
 	mTrackCount = (int)mTracks.size();
 	mType = mTrackCount > 1 ? 1 : 0;

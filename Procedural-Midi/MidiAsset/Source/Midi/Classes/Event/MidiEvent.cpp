@@ -76,6 +76,13 @@ bool MidiEvent::requiresStatusByte(MidiEvent * prevEvent) {
 	if (this->getType() == prevEvent->getType()) {
 		return false;
 	}
+
+	// A way to make sure if its a system exclusive event
+	if ( (this->getType() == 0xF0 || this->getType() == 0xF7) &&
+		 (prevEvent->getType() == 0xF0 || prevEvent->getType() == 0xF7) ) {
+		return false;
+	}
+
 	return true;
 }
 
@@ -88,7 +95,7 @@ int MidiEvent::sId = -1;
 int MidiEvent::sType = -1;
 int MidiEvent::sChannel = -1;
 
-MidiEvent * MidiEvent::parseEvent(long tick, long delta, istream & input){
+MidiEvent * MidiEvent::parseEvent(long tick, long delta, istream & input) {
 	bool reset = false;
 	
 	// ID event
@@ -111,7 +118,6 @@ MidiEvent * MidiEvent::parseEvent(long tick, long delta, istream & input){
 	}
 	// System Exclusive Event
 	else if (sId == 0xF0 || sId == 0xF7) {
-
 		VariableLengthInt size(input);
 
 		string* data = new string(size.getValue(), ' ');
@@ -157,7 +163,7 @@ bool MidiEvent::verifyIdentifier(int id) {
 }
 
 // Just a way to return the name of the event
-string getMidiClassName(int type) {
+string MidiEvent::getMidiClassName(int type) {
 
 	// ChannelEvent
 	switch (type) {

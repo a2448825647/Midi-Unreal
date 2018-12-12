@@ -84,8 +84,8 @@ int ChannelEvent::compareTo(MidiEvent *other) {
 	ChannelEvent * o = static_cast<ChannelEvent*>(other);
 	if (mType != o->getType()) {
 
-		int order1 = ChannelEvent::getOrder(mType);
-		int order2 = ChannelEvent::getOrder(o->getType());
+		int order1 = getOrder(mType);
+		int order2 = getOrder(o->getType());
 		return order1 < order2 ? -1 : 1;
 	}
 	if (mValue1 != o->mValue1) {
@@ -158,9 +158,7 @@ ChannelEvent * ChannelEvent::parseChannelEvent(long tick, long delta, int type, 
 	return NULL;
 }
 
-int ChannelEvent::getOrder(int type)
-
-{
+int ChannelEvent::getOrder(int type) {
 	switch (type) {
 	case PROGRAM_CHANGE:
 		return 0;
