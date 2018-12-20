@@ -5,6 +5,7 @@
 
 #include "Util/MidiUtil.h"
 #include "Event/NoteOn.h"
+#include "Event/NoteOff.h"
 #include "Event/Meta/TimeSignature.h"
 #include "Event/Meta/Tempo.h"
 #include "Event/Meta/EndOfTrack.h"
@@ -113,7 +114,7 @@ long MidiTrack::getLengthInTicks() {
 void MidiTrack::insertNote(int channel, int pitch, int velocity, long tick, long duration) {
 
 	insertEvent(new NoteOn(tick, channel, pitch, velocity));
-	insertEvent(new NoteOn(tick + duration, channel, pitch, 0));
+	insertEvent(new NoteOff(tick + duration, channel, pitch, 0));
 }
 
 void MidiTrack::insertEvent(MidiEvent * newEvent) {
@@ -208,6 +209,7 @@ bool MidiTrack::removeEvent(MidiEvent * E) {
 	else {
 		next->setDelta(next->getTick());
 	}
+
 	return true;
 }
 
