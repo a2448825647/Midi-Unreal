@@ -38,7 +38,8 @@
 #include "Util/MetronomeTick.h"
 #include "Util/MidiProcessor.h"
 
-#include "MML/LabMidiSong.h"
+#include "MML/mml_lite.h"
+
 #include "Thread/MidiThread.h"
 
 #include <algorithm>    // std::sort
@@ -153,13 +154,13 @@ void UMidiComponent::LoadFile(FString path) {
 void UMidiComponent::LoadMML(FString path) {
 	if (!canInit()) return;
 	std::string MyStdString(TCHAR_TO_UTF8(*path));
-	
+
 	mMidiFile = new MidiFile();
-	// Load MML
-	Lab::MidiSong song;
-	song.channel = 0;
-	song.LoadString(MyStdString);
-	mMidiFile->addTrack(song.track);
+	MML_LITE song;
+	song.parse(MyStdString);
+	for (int i = 0; i < song._tracks.size(); i++) {
+		mMidiFile->addTrack(song._tracks[i]);
+	}
 
 	mProcessor.load(*mMidiFile);
 }
