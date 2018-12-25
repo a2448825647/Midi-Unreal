@@ -144,8 +144,9 @@ void MidiProcessor::update(const double& deltaTime /*= clock()*/) {
 }
 
 void MidiProcessor::process() {
+	int len = (int)mCurrEvents.size();
 
-	for (int i = 0; i < (int)mCurrEvents.size(); i++) {
+	for (int i = 0; i < len; i++) {
 		//TODO re-expose track
 		_trackID = i;
 		while (mCurrEvents[i] != mCurrEventsEnd[i]) {
@@ -159,7 +160,7 @@ void MidiProcessor::process() {
 		}
 	}
 
-	for (int i = 0; i < (int)mCurrEvents.size(); i++) {
+	for (int i = 0; i < len; i++) {
 		if (mCurrEvents[i] != mCurrEventsEnd[i])
 		{
 			return;
@@ -170,5 +171,4 @@ void MidiProcessor::process() {
 	this->reset();
 	
 	mListener->onStop(true);
-
 }
