@@ -44,6 +44,8 @@
 
 #include <algorithm>    // std::sort
 
+#include "Async/Async.h"
+
 // Sets default values for this component's properties
 UMidiComponent::UMidiComponent() : PlaySpeed(1.0), mWorker(NULL)
 {
@@ -57,7 +59,8 @@ UMidiComponent::UMidiComponent() : PlaySpeed(1.0), mWorker(NULL)
 }
 
 UMidiComponent::~UMidiComponent() {
-	mProcessor.stop();
+	mProcessor.reset();
+	this->stop();
 
 	if (mMidiFile)
 		delete mMidiFile;
@@ -102,6 +105,8 @@ bool UMidiComponent::canInit() {
 		UE_LOG(LogTemp, Warning, TEXT("Unable to load MIDI while another is playing"));
 		return false;
 	}
+
+	this->stop();
 
 	if (mMidiFile)
 		delete mMidiFile;
@@ -155,10 +160,11 @@ void UMidiComponent::LoadMML(FString path) {
 	if (!canInit()) return;
 	std::string MyStdString(TCHAR_TO_UTF8(*path));
 
-	mMidiFile = new MidiFile();
 	MML_LITE song;
 	song.parse(MyStdString);
-	for (int i = 0; i < song._tracks.size(); i++) {
+
+	mMidiFile = new MidiFile();
+	for (int i = 0; i < (int)song._tracks.size(); i++) {
 		mMidiFile->addTrack(song._tracks[i]);
 	}
 
@@ -191,7 +197,7 @@ void UMidiComponent::handleCallback(MidiEvent* _event, long ms, int trackID)
 		_midiEvent.Data2 = channelEvent->getValue2();
 
 		if (SimplifyNote) {
-			// Running Status Event [Improved Midi Performance]
+
 			if (midi_type == ChannelEvent::NOTE_OFF) {
 				_midiEvent.Type = static_cast<EMidiTypeEnum>(ChannelEvent::NOTE_ON);
 				_midiEvent.Data2 = 0;
@@ -227,7 +233,7 @@ void UMidiComponent::handleCallback(MidiEvent* _event, long ms, int trackID)
 		// add 0xF7 SysEx End on Divided
 		if (isDivided) {
 			// close message
-			if(data[data.Num() - 1] != 0xF7)
+			if (data.Last() != 0xF7)
 				data.Add((uint8)0xF7);
 		}
 
@@ -253,28 +259,31 @@ void UMidiComponent::handleCallback(MidiEvent* _event, long ms, int trackID)
 	}
 }
 
-void UMidiComponent::onStart(bool fromBeginning) { 
-	OnStart.Broadcast(fromBeginning); 
+void UMidiComponent::onStart(bool fromBeginning) {
+	if (InBackground)
+		AsyncTask(ENamedThreads::GameThread, [this, fromBeginning]() {
+		OnStart.Broadcast(fromBeginning);
+	});
+	else
+		OnStart.Broadcast(fromBeginning);
 }
-void UMidiComponent::onStop(bool finish) { 
-		// MultiThread
-	if (mWorker) {
-		mWorker->Stop();
-		delete mWorker;
-	}
-	mWorker = NULL;
-	mQueue.Empty();
-	
-	OnStop.Broadcast(finish);
+void UMidiComponent::onStop(bool finish) {
+	if (InBackground)
+		AsyncTask(ENamedThreads::GameThread, [this, finish]() {
+		OnStop.Broadcast(finish);
+	});
+	else
+		OnStop.Broadcast(finish);
 }
 
 //-----------------------------------
 
 void UMidiComponent::start(bool background, bool UseGameTime) {
 	if (!isRunning()) {
+		this->stop();
+		
 		InBackground = background;
 		this->isGameTime = UseGameTime;
-
 
 		if (UseGameTime) {
 			mProcessor.milliFunction = NULL;
@@ -296,6 +305,14 @@ void UMidiComponent::start(bool background, bool UseGameTime) {
 
 void UMidiComponent::stop() {
 	mProcessor.stop();
+
+	// MultiThread
+	if (mWorker) {
+		mWorker->Stop();
+		delete mWorker;
+	}
+	mWorker = NULL;
+	mQueue.Empty();
 }
 
 void UMidiComponent::reset() {
@@ -360,6 +377,8 @@ float UMidiComponent::GetDuration()
 				++mCurrEvents[i];
 			}
 		}
+
+		// sort tempo in rare case of multi-tempo track
 		std::sort(tempoTicks.begin(), tempoTicks.end(), _ConstPredicate);
 
 		double ticksElapsed = 0;
