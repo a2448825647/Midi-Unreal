@@ -85,9 +85,13 @@ void MML_LITE::moveTime(float speed) {
 int* MML_LITE::parseModifiers() {
 	
 	static int modifiers[4] = { 0 };
-	memset(modifiers, 0, sizeof modifiers);
+	
 	int i;
-	for (i = index; i < source->length(); i++) {
+	for(i = 0; i < 4; i++){
+		modifiers[i] = 0;
+	}
+	
+	for (i = index; i < (int)source->length(); i++) {
 		char cur = source->at(i);
 
 		if (get_char_type(cur) != ""
@@ -101,7 +105,7 @@ int* MML_LITE::parseModifiers() {
 		// Read in complete values if current is the start of one
 		if (get_char_type(cur) == "val") {
 			string v = "";
-			while (i < source->length() && get_char_type(source->at(i)) == "val") {
+			while (i < (int)source->length() && get_char_type(source->at(i)) == "val") {
 				v += source->at(i++);
 			}
 			i--;
@@ -181,6 +185,7 @@ void MML_LITE::parseNote() {
 		else if (get_char_type(cur) == "vol") {
 			index++;
 			auto mod = parseModifiers();
+			volume = mod[0];
 			_track->insertEvent(new Controller( (long)(curPos * 1000), track, 7, volume));
 		}
 		else if (get_char_type(cur) == "rest") {

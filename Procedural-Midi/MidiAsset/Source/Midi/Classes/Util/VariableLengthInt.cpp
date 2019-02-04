@@ -51,14 +51,11 @@ void VariableLengthInt::parseBytes(istream & input) {
 
 	int b = input.get();
 	while (mSizeInBytes < 4) {
-		mSizeInBytes++;
+		ints[mSizeInBytes] = b & 0x7F;
 
-		bool variable = (b & 0x80) > 0;
-		if (!variable) {
-			ints[mSizeInBytes - 1] = (b & 0x7F);
-			break;
-		}
-		ints[mSizeInBytes - 1] = (b & 0x7F);
+		mSizeInBytes++;
+		// break loop if value is less than 128
+		if ((b & 0x80) == 0) break;
 
 		// read next byte
 		b = input.get();

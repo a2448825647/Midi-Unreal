@@ -69,7 +69,7 @@ char * MidiUtil::intToBytes(int val, int byteCount) {
 bool MidiUtil::bytesEqual(string buf1, string buf2, int off, int len) {
 
 	for (int i = off; i < off + len; i++) {
-		if ( (i >= buf1.size()) || (i >= buf2.size()) ) {
+		if ( (i >= (int)buf1.size()) || (i >= (int)buf2.size()) ) {
 			return false;
 		}
 		if (buf1[i] != buf2[i]) {
