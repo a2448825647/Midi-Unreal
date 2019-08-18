@@ -2,10 +2,7 @@
 
 #pragma once
 
-#include "UObject/ObjectMacros.h"
-#include "UObject/Object.h"
-#include "UObject/UnrealType.h"
-#include "UObject/ScriptMacros.h"
+#include "CoreMinimal.h"
 #include "MidiStruct.generated.h"
 
 // Middle Key Notes

@@ -75,8 +75,13 @@ void MidiProcessor::reset() {
 	mMsElapsed = 0;
 
 	//reset metronome
-	if (mMetronome)
-		mMetronome->setTimeSignature(&mSig);
+	if (mMetronome) {
+		delete mMetronome;
+		mMetronome = NULL;
+		//mMetronome->setTimeSignature(&mSig);
+	}
+	mMetronome = new MetronomeTick(&mSig, mPPQ);
+		
 
 	vector<MidiTrack*>& tracks = mMidiFile->getTracks();
 	for (int i = 0; i < (int)mCurrEvents.size(); i++) {

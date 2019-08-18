@@ -50,31 +50,11 @@ MetaEvent * MetaEvent::parseMetaEvent(long tick, long delta, istream & input) {
 
 	MetaEventData eventData = MetaEventData(input);
 
-	// Set whether event is a text type event
-	bool isText = false;
-	switch (eventData.type) {
-	case SEQUENCE_NUMBER:
-	case MIDI_CHANNEL_PREFIX:
-	case END_OF_TRACK:
-	case TEMPO:
-	case SMPTE_OFFSET:
-	case TIME_SIGNATURE:
-	case KEY_SIGNATURE:
-		break;
-	case TEXT_EVENT:
-	case COPYRIGHT_NOTICE:
-	case TRACK_NAME:
-	case INSTRUMENT_NAME:
-	case LYRICS:
-	case MARKER:
-	case CUE_POINT:
-	case SEQUENCER_SPECIFIC:		// Not technically text, but follows same structure
-	default:						// Also not technically text, but it should follow
-		isText = true;
-		break;
-	}
+	// check whether event is a text type event
+	if (eventData.type >= TEXT_EVENT && eventData.type <= CUE_POINT || 
+		// Not technically text, but follows same structure
+		eventData.type == SEQUENCER_SPECIFIC) {
 
-	if (isText) {
 		string text(eventData.data, eventData.length->getValue());
 
 		switch (eventData.type) {
@@ -94,8 +74,6 @@ MetaEvent * MetaEvent::parseMetaEvent(long tick, long delta, istream & input) {
 			return new CuePoint(tick, delta, text);
 		case SEQUENCER_SPECIFIC:
 			return new SequencerSpecificEvent(tick, delta, new string(text));
-		default:
-			return new GenericMetaEvent(tick, delta, eventData);
 		}
 	}
 
@@ -116,7 +94,6 @@ MetaEvent * MetaEvent::parseMetaEvent(long tick, long delta, istream & input) {
 		return KeySignature::parseKeySignature(tick, delta, eventData);
 	}
 
-	// This should never run else something has gone wrong
-	cerr << "Completely broken in MetaEvent.parseMetaEvent()";
-	return NULL;
+	// Unknown Meta Event
+	return new GenericMetaEvent(tick, delta, eventData);
 }
