@@ -51,7 +51,7 @@ MetaEvent * MetaEvent::parseMetaEvent(long tick, long delta, istream & input) {
 	MetaEventData eventData = MetaEventData(input);
 
 	// check whether event is a text type event
-	if (eventData.type >= TEXT_EVENT && eventData.type <= CUE_POINT || 
+	if ( ((eventData.type >= TEXT_EVENT) && (eventData.type <= CUE_POINT)) || 
 		// Not technically text, but follows same structure
 		eventData.type == SEQUENCER_SPECIFIC) {
 
